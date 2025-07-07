@@ -1,6 +1,5 @@
-spacy==3.7.2
+streamlit
+spacy==3.5.4
 pandas
 numpy
 scikit-learn
-sentence-transformers
-pytest
