@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+.venv
+
+# Editor e IDEs
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dados
+data/processed/
+*.log
+*.sqlite3
+*.db
+
+# Relatórios
+*.txt
+
+# Sistema
+.DS_Store
+Thumbs.db
