@@ -24,3 +24,52 @@ Instale com:
 ```bash
 pip install -r requirements.txt
 python -m spacy download pt_core_news_sm
+```
+
+---
+
+## 🚀 Execução
+
+1. Prepare um arquivo `.csv` com uma coluna chamada `text`.
+2. Execute o notebook:
+
+```bash
+jupyter notebook notebooks/notebook_icoer_mvp.ipynb
+```
+
+3. Gere automaticamente um relatório com as métricas de coerência.
+4. Execute os testes para validar o funcionamento:
+
+```bash
+pytest
+```
+
+---
+
+## ⚡ Demonstração Rápida
+
+```bash
+# Clonar o repositório
+git clone https://github.com/seu_usuario/icoer-auditoria-mvp.git
+cd icoer-auditoria-mvp
+
+# Instalar dependências
+pip install -r requirements.txt
+python -m spacy download pt_core_news_sm
+
+# Executar notebook de auditoria
+jupyter notebook notebooks/notebook_icoer_mvp.ipynb
+```
+
+---
+
+## 📄 Licença
+
+MIT License
+
+---
+
+## 🔗 Artigos Relacionados
+
+- [The Informational Coherence Index v7: Real-Time Integration of Bioinformational Signals and Adaptive AI in Distributed Networks](https://doi.org/10.5281/zenodo.15848219)
+- [Narratons: Fundamental Units of Coherent Narrative in the Unified Theory of Informational Spin (TGU)](https://doi.org/10.5281/zenodo.15832649)
