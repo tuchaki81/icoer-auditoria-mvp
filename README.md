@@ -1,3 +1,20 @@
+# Análise de Coerência Informacional (ICOER)
+
+Este repositório contém um notebook para análise de coerência informacional em textos, utilizando o índice ICOER.
+
+## Como Usar
+
+Clique no botão abaixo para abrir e executar o notebook de análise diretamente no Google Colab. Não é necessário instalar nada!
+
+[![Abrir no Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/tuchaki81/icoer-auditoria-mvp/blob/main/notebooks/icoer_text_analysis.ipynb)
+
+### Sobre o Notebook
+O notebook `icoer_text_analysis.ipynb` permite que você:
+- Insira um texto com várias frases.
+- Calcule o índice ICOER para cada frase.
+- Exporte os resultados para um arquivo CSV.
+- Visualize um gráfico com os resultados da análise.
+
 # ICOER v7 — Auditoria Ética Automatizada de LLMs via Coerência Informacional
 
 Este projeto implementa um MVP funcional para calcular o Índice de Coerência Informacional (**ICOER v7**) em saídas de modelos de linguagem natural (LLMs), com foco em auditoria ética automatizada, transparente e escalável.
