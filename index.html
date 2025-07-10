@@ -4,50 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ICOER Auditoria MVP</title>
-    <!-- PyScript -->
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/pyscript.css" />
-    <script defer src="https://pyscript.net/releases/2024.1.1/pyscript.js"></script>
+    <!-- PyScript (use latest release) -->
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f9f9f9;
-            color: #333;
-        }
-        h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 0.5em;
-        }
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 10px;
-            font-size: 1rem;
-            border: 2px solid #333;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        button {
-            background-color: #3498db;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+               max-width: 800px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5em; }
+        textarea { width: 100%; height: 150px; padding: 10px; font-size: 1rem;
+                   border: 2px solid #333; border-radius: 4px; margin-bottom: 10px; box-sizing: border-box; }
+        button { background-color: #3498db; color: #fff; border: none;
+                 padding: 10px 20px; font-size: 1rem; border-radius: 4px;
+                 cursor: pointer; margin-bottom: 20px; }
         button:hover { background-color: #2980b9; }
-        #result {
-            padding: 15px;
-            background: #fff;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-height: 2em;
-        }
+        #result { min-height: 2em; padding: 15px; background: #fff;
+                  border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .links { margin-top: 30px; }
         .links a { color: #3498db; text-decoration: none; }
         .links a:hover { text-decoration: underline; }
@@ -61,21 +32,30 @@
     <button id="analyze-btn">Analisar</button>
     <div id="result">Os resultados da análise aparecerão aqui.</div>
 
+    <!-- PyScript: substitua analyze_text pela lógica real em Python -->
     <py-script>
 from pyscript import Element
+# placeholder: conte as palavras
 
 def analyze_text(evt=None):
-    # Recupera texto do textarea
     text = Element("text-input").element.value or ""
-    # Exemplo de análise: conta palavras
     score = len(text.split())
-    result_text = f"Índice de Coerência Informacional (ICOER): {score}"
-    # Atualiza o div de resultado
-    Element("result").element.innerText = result_text
+    Element("result").element.innerText = f"ICOER (contagem de palavras): {score}"
 
-# Vincula o evento de clique ao botão
 Element("analyze-btn").element.addEventListener("click", analyze_text)
     </py-script>
+
+    <!-- Fallback em JavaScript caso o PyScript falhe -->
+    <script>
+window.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('analyze-btn');
+    btn.addEventListener('click', () => {
+        const txt = document.getElementById('text-input').value || '';
+        const count = txt.split(/\s+/).filter(w => w).length;
+        document.getElementById('result').innerText = `ICOER (JS fallback): ${count}`;
+    });
+});
+    </script>
 
     <div class="links">
         <h2>Links úteis</h2>
