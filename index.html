@@ -26,7 +26,7 @@
             height: 150px;
             padding: 10px;
             font-size: 1rem;
-            border: 1px solid #ccc;
+            border: 2px solid #333;
             border-radius: 4px;
             margin-bottom: 10px;
         }
@@ -38,27 +38,19 @@
             font-size: 1rem;
             border-radius: 4px;
             cursor: pointer;
+            margin-bottom: 20px;
         }
-        button:hover {
-            background-color: #2980b9;
-        }
+        button:hover { background-color: #2980b9; }
         #result {
-            margin-top: 20px;
             padding: 15px;
             background: #fff;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 2em;
         }
-        .links {
-            margin-top: 30px;
-        }
-        .links a {
-            color: #3498db;
-            text-decoration: none;
-        }
-        .links a:hover {
-            text-decoration: underline;
-        }
+        .links { margin-top: 30px; }
+        .links a { color: #3498db; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -69,21 +61,19 @@
     <button id="analyze-btn">Analisar</button>
     <div id="result">Os resultados da análise aparecerão aqui.</div>
 
-    <!-- PyScript: lógica de análise -->
     <py-script>
-from pyscript import Element, write
+from pyscript import Element
 
-# Função principal de análise: substitua este bloco pela importação do seu módulo
-# Exemplo: from icoer import analyze_text_function
-
-def analyze_text(_event=None):
-    text = Element("text-input").value or ""
-    # Placeholder: conta palavras como demo
+def analyze_text(evt=None):
+    # Recupera texto do textarea
+    text = Element("text-input").element.value or ""
+    # Exemplo de análise: conta palavras
     score = len(text.split())
-    # Escreve no container result
-    write("result", f"Índice de Coerência Informacional (ICOER): {score}")
+    result_text = f"Índice de Coerência Informacional (ICOER): {score}"
+    # Atualiza o div de resultado
+    Element("result").element.innerText = result_text
 
-# Conecta o botão ao evento de clique
+# Vincula o evento de clique ao botão
 Element("analyze-btn").element.addEventListener("click", analyze_text)
     </py-script>
 
