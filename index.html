@@ -15,17 +15,29 @@
     button:disabled { background:#aaa; cursor:not-allowed; }
     #result { min-height:2em; padding:15px; background:#fff;
               border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,.1); }
+    .analysis-frame { width:100%; height:600px; border:1px solid #ccc; margin-top:30px; }
     .links { margin-top:30px; }
     .links a { color:#3498db; text-decoration:none; }
     .links a:hover { text-decoration:underline; }
+    .notice { font-size:0.9rem; color:#555; margin-bottom:20px; }
   </style>
 </head>
 <body>
   <h1>Análise de Coerência Informacional (ICOER)</h1>
-  <p>Cole seu texto abaixo e clique em <strong>Analisar</strong>. Aguarde o carregamento do motor Python.</p>
+  <p>Cole seu texto abaixo e clique em <strong>Analisar</strong>. Aguarde o carregamento do motor Python ou use o fallback em JS.</p>
+
+  <!-- Area interativa -->
   <textarea id="text-input" placeholder="Cole seu texto aqui…"></textarea>
   <button id="analyze-btn" disabled>Carregando Python...</button>
   <div id="result">Os resultados da análise aparecerão aqui.</div>
+
+  <!-- Instrução para análise detalhada estática -->
+  <div class="notice">
+    <p>Para uma análise completa com gráficos, veja abaixo o relatório estático gerado pelo notebook:</p>
+  </div>
+  <!-- Iframe que carrega a versão HTML do notebook (exportada via nbconvert) -->
+  <iframe class="analysis-frame" src="analysis.html" title="Relatório ICOER Detalhado"></iframe>
+
   <div class="links">
     <h2>Links úteis</h2>
     <ul>
@@ -34,71 +46,60 @@
     </ul>
   </div>
 
-  <!-- 1) Carrega o Pyodide -->
+  <!-- Pyodide + fallback JS seguem inalterados -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
   <script>
     let pyodideReady = false;
     async function main() {
-      // Inicia o Pyodide
-      window.pyodide = await loadPyodide({
-        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
-      });
-      // Se você precisar de bibliotecas externas, pode usar:
-      // await pyodide.loadPackage(['numpy','nltk', ...]);
-      // ou
-      // await pyodide.runPythonAsync(`
-      // import micropip
-      // await micropip.install('seu-pacote')
-      // `);
-
-      // Agora o botão pode ser usado
-      document.getElementById("analyze-btn").innerText = "Analisar";
-      document.getElementById("analyze-btn").disabled = false;
+      window.pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/' });
+      document.getElementById('analyze-btn').innerText = 'Analisar';
+      document.getElementById('analyze-btn').disabled = false;
       pyodideReady = true;
     }
     main();
 
-    // 2) Função de análise
     async function analyze() {
-      const txt = document.getElementById("text-input").value || "";
-      if (!pyodideReady) {
-        document.getElementById("result").innerText = "Python ainda não carregado.";
-        return;
-      }
-      // Aqui você cola a lógica do seu notebook, adaptando para função:
+      const txt = document.getElementById('text-input').value || '';
       const pythonCode = `
+from matplotlib import use; use('Agg')  # sem interface
+import matplotlib.pyplot as plt
+import io, base64
+
 def analyze_text(text):
-    # === INÍCIO DA LÓGICA ICOER ===
-    # Exemplo: só conta palavras
-    return len(text.split())
-    
-result = analyze_text("""
-${txt.replace(/"""/g, '\\"""')}
-""")
+    # Cole aqui a lógica completa do notebook, incluindo cálculo e plots
+    words = text.split()
+    fig, ax = plt.subplots()
+    ax.hist([len(w) for w in words], bins=range(1, 15));
+    ax.set_title('Distribuição de Tamanhos de Palavra')
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    img_b64 = base64.b64encode(buf.read()).decode('ascii')
+    # Retorna o texto e a imagem em base64
+    return len(words), img_b64
+
+count, img = analyze_text('''${txt.replace(/'''/g, "\\'\\'\\'")}''')
+
+# Expose
+result_count = count
+result_img = img
 `;
-      // Executa Python
       await pyodide.runPythonAsync(pythonCode);
-      // Traz o resultado
-      const res = pyodide.globals.get("result");
-      document.getElementById("result").innerText = "Resultado (via Pyodide): " + res;
+      const count = pyodide.globals.get('result_count');
+      const img = pyodide.globals.get('result_img');
+      document.getElementById('result').innerHTML =
+        `<strong>Palavras totais:</strong> ${count}<br>` +
+        `<img src="data:image/png;base64,${img}" style="max-width:100%; margin-top:15px;"/>`;
     }
 
-    // 3) fallback JavaScript
     function analyzeFallback() {
-      const txt = document.getElementById("text-input").value || "";
+      const txt = document.getElementById('text-input').value || '';
       const count = txt.split(/\s+/).filter(w=>w).length;
-      document.getElementById("result").innerText = "Fallback JS (words): " + count;
+      document.getElementById('result').innerText = 'Fallback JS (words): ' + count;
     }
 
-    // Vincula o listener (sempre escutamos, mas escolhemos qual rodar)
-    document.getElementById("analyze-btn")
-      .addEventListener("click", e => {
-        if (pyodideReady) {
-          analyze();
-        } else {
-          analyzeFallback();
-        }
-      });
+    document.getElementById('analyze-btn')
+      .addEventListener('click', () => pyodideReady ? analyze() : analyzeFallback());
   </script>
 </body>
 </html>
