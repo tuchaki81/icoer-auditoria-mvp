@@ -81,13 +81,12 @@
 <body>
   <div class="container">
     <h1>Ferramenta de Análise ICOER</h1>
-    <p>Cole seu texto abaixo e clique em “Analisar Texto”.</p>
+    <p>Bem-vindo à ferramenta de Análise de Coerência Informacional (ICOER). Cole seu texto abaixo.</p>
 
+    <h2>Como usar</h2>
     <textarea id="text-input" rows="8"
       placeholder="Digite ou cole seu texto aqui...">A IA deve agir com coerência e verdade. A verdade é a forma mais pura de ressonância! O índice de coerência informacional orienta decisões éticas?</textarea>
-
-    <!-- botão com id e py-click -->
-    <button id="analyze-btn" py-click="run_analysis">Analisar Texto</button>
+    <button py-click="run_analysis">Analisar Texto</button>
 
     <div id="loader" class="loader"></div>
     <div id="output-status"></div>
@@ -103,15 +102,16 @@
     </div>
   </div>
 
-  <footer>Desenvolvido com Python, PyScript e ❤️.</footer>
+  <footer>
+    Desenvolvido com Python, PyScript e ❤️.
+  </footer>
 
-<!-- CONFIGURAÇÃO TOML SEM NENHUMA INDENTAÇÃO -->
-<py-config>
+  <py-config>
 packages = ["pandas","numpy","matplotlib","spacy"]
-files = ["https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0-py3-none-any.whl"]
-</py-config>
+files    = ["https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0-py3-none-any.whl"]
+  </py-config>
 
-<py-script>
+  <py-script>
 import pandas as pd
 import numpy as np
 import spacy
@@ -120,20 +120,20 @@ import matplotlib.pyplot as plt
 import io, base64
 from pyscript import Element
 
-# elementos da página
+# Elementos
 status_el = Element("output-status")
 table_el  = Element("output-table")
 plot_el   = Element("output-plot")
 loader_el = Element("loader")
 
+# Globals
 nlp = None
 BASE_POS = ['NOUN','VERB','ADJ','ADV','ADP','PROPN']
 
-# carrega o modelo (uma vez só)
 async def setup_spacy():
     global nlp
     if nlp is None:
-        status_el.write("Carregando modelo…")
+        status_el.write("Carregando modelo... aguarde.")
         loader_el.element.style.display = "block"
         try:
             await spacy.cli.package.install("pt_core_news_sm-3.7.0-py3-none-any.whl")
@@ -144,49 +144,64 @@ async def setup_spacy():
         finally:
             loader_el.element.style.display = "none"
 
-# função que faz todo o fluxo de análise
 def calcular_icoer(frases):
     docs = list(nlp.pipe(frases))
     regs = []
     for i, doc in enumerate(docs, start=1):
-        if len(doc)<3 or not any(t.is_alpha or t.is_digit for t in doc):
+        # ignora fragmentos curtos
+        if len(doc) < 3 or not any(t.is_alpha or t.is_digit for t in doc):
             continue
         counts = Counter(t.pos_ for t in doc)
-        total  = sum(counts.values())
-        vetor  = [counts.get(p,0)/total if total>0 else 0 for p in BASE_POS]
-        probs  = np.array([v for v in vetor if v>0])
-        ent    = -np.sum(probs*np.log2(probs)) if probs.size else 0
-        ent_max= np.log2(len(BASE_POS)) if len(BASE_POS)>1 else 1
-        icoer  = round(max(0,1-(ent/ent_max if ent_max>0 else 0)),4)
-        regs.append({'narraton':i,'frase':doc.text,'n_palavras':len(doc),'tags':dict(counts),'icoer':icoer})
+        total = sum(counts.values())
+        vetor = [counts.get(p,0)/total if total>0 else 0 for p in BASE_POS]
+        probs = np.array([v for v in vetor if v>0])
+        ent = -np.sum(probs * np.log2(probs)) if probs.size else 0
+        ent_max = np.log2(len(BASE_POS)) if len(BASE_POS)>1 else 1
+        icoer = round(max(0,1 - (ent/ent_max if ent_max>0 else 0)),4)
+        regs.append({
+            'narraton': i,
+            'frase': doc.text,
+            'n_palavras': len(doc),
+            'tags': dict(counts),
+            'icoer': icoer
+        })
 
     df = pd.DataFrame(regs)
     if df.empty:
-        return pd.DataFrame([{'narraton':0,'frase':'Nenhuma frase válida','n_palavras':0,'tags':{},'icoer':0}])
+        return pd.DataFrame([{
+            'narraton': 0,
+            'frase': 'Nenhuma frase válida',
+            'n_palavras': 0,
+            'tags': {},
+            'icoer': 0
+        }])
 
-    tag_sum = {p:round(np.mean([r['tags'].get(p,0) for r in regs]),2) for p in BASE_POS}
-    resumo  = pd.DataFrame([{'narraton':0,'frase':'MÉDIA GERAL',
-                             'n_palavras':round(df['n_palavras'].mean(),2),
-                             'tags':tag_sum,'icoer':round(df['icoer'].mean(),4)}])
-    return pd.concat([resumo, df],ignore_index=True)[['narraton','frase','n_palavras','tags','icoer']]
+    # resumo
+    tag_sum = {p: round(np.mean([r['tags'].get(p,0) for r in regs]),2) for p in BASE_POS}
+    resumo = pd.DataFrame([{
+        'narraton': 0,
+        'frase': 'MÉDIA GERAL',
+        'n_palavras': round(df['n_palavras'].mean(),2),
+        'tags': tag_sum,
+        'icoer': round(df['icoer'].mean(),4)
+    }])
+    return pd.concat([resumo, df], ignore_index=True)[['narraton','frase','n_palavras','tags','icoer']]
 
-# função chamada ao clicar no botão
 async def run_analysis(*args, **kwargs):
-    status_el.clear()
-    status_el.write("Botão clicado!")       # << debug
     if nlp is None:
         await setup_spacy()
         if nlp is None:
             return
 
+    # limpa saídas
     table_el.clear()
     plot_el.clear()
-    status_el.write("Analisando…")
+    status_el.write("Analisando...")
     loader_el.element.style.display = "block"
 
     try:
         text = Element("text-input").value
-        doc  = nlp(text)
+        doc = nlp(text)
         frases = [s.text.strip() for s in doc.sents if s.text.strip()]
         if not frases:
             status_el.write("Nenhuma frase encontrada.")
@@ -195,27 +210,31 @@ async def run_analysis(*args, **kwargs):
         df = calcular_icoer(frases)
         table_el.write(df.to_html(index=False), append=False)
 
-        dfp = df[df['narraton']!=0]
-        if not dfp.empty:
+        df_plot = df[df['narraton']!=0]
+        if not df_plot.empty:
             fig, ax = plt.subplots(figsize=(10,6))
-            labels = [f"{i}: {f[:30]}…" for i,f in zip(dfp['narraton'], dfp['frase'])]
-            ax.bar(labels, dfp['icoer'])
-            ax.set_ylim(0,1.1)
+            labels = [f"{i}: {f[:30]}..." for i,f in zip(df_plot['narraton'],df_plot['frase'])]
+            ax.bar(labels, df_plot['icoer'])
+            ax.set_xlabel('Narraton')
+            ax.set_ylabel('ICOER')
+            ax.set_title('ICOER por Frase')
             plt.xticks(rotation=45, ha="right")
+            plt.ylim(0,1.1)
             plt.tight_layout()
-            buf = io.BytesIO(); fig.savefig(buf, format="png"); buf.seek(0)
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png"); buf.seek(0)
             img = base64.b64encode(buf.read()).decode("utf-8")
             plot_el.write(f'<img src="data:image/png;base64,{img}">', append=False)
             plt.close(fig)
 
         status_el.write("Concluído.")
     except Exception as e:
-        status_el.write(f"Erro: {e}")
+        status_el.write(f"Erro na análise: {e}")
     finally:
         loader_el.element.style.display = "none"
 
-# dispara o carregamento inicial do spaCy
+# dispara o setup inicial
 await setup_spacy()
-</py-script>
+  </py-script>
 </body>
 </html>
