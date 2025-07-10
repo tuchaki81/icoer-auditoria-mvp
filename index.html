@@ -1,68 +1,104 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICOER Auditoria MVP</title>
-    <!-- PyScript (use latest release) -->
-    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
-    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-               max-width: 800px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5em; }
-        textarea { width: 100%; height: 150px; padding: 10px; font-size: 1rem;
-                   border: 2px solid #333; border-radius: 4px; margin-bottom: 10px; box-sizing: border-box; }
-        button { background-color: #3498db; color: #fff; border: none;
-                 padding: 10px 20px; font-size: 1rem; border-radius: 4px;
-                 cursor: pointer; margin-bottom: 20px; }
-        button:hover { background-color: #2980b9; }
-        #result { min-height: 2em; padding: 15px; background: #fff;
-                  border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .links { margin-top: 30px; }
-        .links a { color: #3498db; text-decoration: none; }
-        .links a:hover { text-decoration: underline; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ICOER Auditoria MVP</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+           max-width: 800px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
+    h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: .5em; }
+    textarea { width:100%; height:150px; padding:10px; font-size:1rem;
+               border:2px solid #333; border-radius:4px; margin-bottom:10px; box-sizing:border-box; }
+    button { background:#3498db; color:#fff; border:none; padding:10px 20px;
+             font-size:1rem; border-radius:4px; cursor:pointer; margin-bottom:20px; }
+    button:disabled { background:#aaa; cursor:not-allowed; }
+    #result { min-height:2em; padding:15px; background:#fff;
+              border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,.1); }
+    .links { margin-top:30px; }
+    .links a { color:#3498db; text-decoration:none; }
+    .links a:hover { text-decoration:underline; }
+  </style>
 </head>
 <body>
-    <h1>Análise de Coerência Informacional (ICOER)</h1>
-    <p>Ferramenta para calcular o Índice de Coerência Informacional diretamente no navegador. Cole seu texto abaixo e clique em <strong>Analisar</strong>.</p>
+  <h1>Análise de Coerência Informacional (ICOER)</h1>
+  <p>Cole seu texto abaixo e clique em <strong>Analisar</strong>. Aguarde o carregamento do motor Python.</p>
+  <textarea id="text-input" placeholder="Cole seu texto aqui…"></textarea>
+  <button id="analyze-btn" disabled>Carregando Python...</button>
+  <div id="result">Os resultados da análise aparecerão aqui.</div>
+  <div class="links">
+    <h2>Links úteis</h2>
+    <ul>
+      <li><a href="https://colab.research.google.com/github/tuchaki81/icoer-auditoria-mvp/blob/main/notebooks/icoer_text_analysis.ipynb" target="_blank">Executar no Google Colab</a></li>
+      <li><a href="https://github.com/tuchaki81/icoer-auditoria-mvp" target="_blank">Repositório no GitHub</a></li>
+    </ul>
+  </div>
 
-    <textarea id="text-input" placeholder="Cole seu texto aqui..."></textarea>
-    <button id="analyze-btn">Analisar</button>
-    <div id="result">Os resultados da análise aparecerão aqui.</div>
+  <!-- 1) Carrega o Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+  <script>
+    let pyodideReady = false;
+    async function main() {
+      // Inicia o Pyodide
+      window.pyodide = await loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
+      });
+      // Se você precisar de bibliotecas externas, pode usar:
+      // await pyodide.loadPackage(['numpy','nltk', ...]);
+      // ou
+      // await pyodide.runPythonAsync(`
+      // import micropip
+      // await micropip.install('seu-pacote')
+      // `);
 
-    <!-- PyScript: substitua analyze_text pela lógica real em Python -->
-    <py-script>
-from pyscript import Element
-# placeholder: conte as palavras
+      // Agora o botão pode ser usado
+      document.getElementById("analyze-btn").innerText = "Analisar";
+      document.getElementById("analyze-btn").disabled = false;
+      pyodideReady = true;
+    }
+    main();
 
-def analyze_text(evt=None):
-    text = Element("text-input").element.value or ""
-    score = len(text.split())
-    Element("result").element.innerText = f"ICOER (contagem de palavras): {score}"
+    // 2) Função de análise
+    async function analyze() {
+      const txt = document.getElementById("text-input").value || "";
+      if (!pyodideReady) {
+        document.getElementById("result").innerText = "Python ainda não carregado.";
+        return;
+      }
+      // Aqui você cola a lógica do seu notebook, adaptando para função:
+      const pythonCode = `
+def analyze_text(text):
+    # === INÍCIO DA LÓGICA ICOER ===
+    # Exemplo: só conta palavras
+    return len(text.split())
+    
+result = analyze_text("""
+${txt.replace(/"""/g, '\\"""')}
+""")
+`;
+      // Executa Python
+      await pyodide.runPythonAsync(pythonCode);
+      // Traz o resultado
+      const res = pyodide.globals.get("result");
+      document.getElementById("result").innerText = "Resultado (via Pyodide): " + res;
+    }
 
-Element("analyze-btn").element.addEventListener("click", analyze_text)
-    </py-script>
+    // 3) fallback JavaScript
+    function analyzeFallback() {
+      const txt = document.getElementById("text-input").value || "";
+      const count = txt.split(/\s+/).filter(w=>w).length;
+      document.getElementById("result").innerText = "Fallback JS (words): " + count;
+    }
 
-    <!-- Fallback em JavaScript caso o PyScript falhe -->
-    <script>
-window.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('analyze-btn');
-    btn.addEventListener('click', () => {
-        const txt = document.getElementById('text-input').value || '';
-        const count = txt.split(/\s+/).filter(w => w).length;
-        document.getElementById('result').innerText = `ICOER (JS fallback): ${count}`;
-    });
-});
-    </script>
-
-    <div class="links">
-        <h2>Links úteis</h2>
-        <ul>
-            <li><a href="https://colab.research.google.com/github/tuchaki81/icoer-auditoria-mvp/blob/main/notebooks/icoer_text_analysis.ipynb" target="_blank">Executar no Google Colab</a></li>
-            <li><a href="https://github.com/tuchaki81/icoer-auditoria-mvp" target="_blank">Repositório no GitHub</a></li>
-        </ul>
-    </div>
+    // Vincula o listener (sempre escutamos, mas escolhemos qual rodar)
+    document.getElementById("analyze-btn")
+      .addEventListener("click", e => {
+        if (pyodideReady) {
+          analyze();
+        } else {
+          analyzeFallback();
+        }
+      });
+  </script>
 </body>
 </html>
