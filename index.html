@@ -5,145 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Análise de Coerência Informacional (ICOER)</title>
 
-  <!-- PyScript -->
   <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
   <script defer type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    h1, h2 {
-      color: #2c3e50;
-      border-bottom: 2px solid #3498db;
-      padding-bottom: 10px;
-    }
-    .container {
-      background: #fff;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    textarea {
-      width: 100%;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-      margin-bottom: 15px;
-    }
-    button {
-      background: #3498db;
-      color: #fff;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 5px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #2980b9;
-    }
-    #loader {
-      display: none;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      color: #777;
-      font-size: 0.9em;
-    }
-    .links {
-      margin-top: 20px;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width:900px; margin:20px auto; background:#f9f9f9; color:#333; }
+    .container { background:#fff; padding:25px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+    textarea { width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:5px; font-size:1rem; }
+    button { background:#3498db; color:#fff; padding:12px 20px; border:none; border-radius:5px; cursor:pointer; transition:background .3s; }
+    button:hover{ background:#2980b9 }
+    #loader{ display:none; margin:20px auto; border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+    footer{ text-align:center; color:#777; margin-top:30px; font-size:.9em }
   </style>
 </head>
-
 <body>
   <div class="container">
     <h1>Ferramenta de Análise ICOER</h1>
-    <p>Bem-vindo à ferramenta de Análise de Coerência Informacional (ICOER). Cole seu texto abaixo e clique em “Analisar Texto”.</p>
-
-    <textarea id="text-input" rows="6"
-      placeholder="Digite ou cole seu texto aqui...">A IA deve agir com coerência e verdade. A verdade é a forma mais pura de ressonância! O índice de coerência informacional orienta decisões éticas?</textarea>
-
-    <!-- Use py-click, não py-onClick -->
-    <button id="analyze-btn" py-click="run_analysis()">Analisar Texto</button>
+    <p>Cole seu texto abaixo e clique em “Analisar Texto”.</p>
+    <textarea id="text-input" rows="6">A IA deve agir com coerência e verdade. A verdade é a forma mais pura de ressonância! O índice de coerência informacional orienta decisões éticas?</textarea>
+    <button id="analyze-btn" py-click="run_analysis">Analisar Texto</button>
 
     <div id="loader"></div>
     <div id="output-status"></div>
     <div id="output-table"></div>
     <div id="output-plot"></div>
-
-    <div class="links">
-      <p><strong>Recursos Adicionais:</strong></p>
-      <ul>
-        <li><a href="https://colab.research.google.com/github/tuchaki81/icoer-auditoria-mvp/blob/main/notebooks/icoer_text_analysis.ipynb" target="_blank">Abrir o Notebook no Colab</a></li>
-        <li><a href="https://github.com/tuchaki81/icoer-auditoria-mvp" target="_blank">Código no GitHub</a></li>
-      </ul>
-    </div>
   </div>
 
   <footer>Desenvolvido com Python, PyScript e SpaCy.</footer>
 
-  <!-- Configurações do PyScript -->
+  <!-- Diga ao PyScript quais pacotes e arquivos buscar antes de executar -->
   <py-config>
-packages = [
-  "pandas",
-  "numpy",
-  "matplotlib",
-  "micropip"
+packages = ["pandas","numpy","matplotlib","micropip"]
+files = [
+  "https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0-py3-none-any.whl"
 ]
-</py-config>
+  </py-config>
 
   <py-script>
-import micropip
-await micropip.install("https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0-py3-none-any.whl")
-await micropip.install("spacy")
-
-import spacy, pandas as pd, numpy as np
-from collections import Counter
-import matplotlib.pyplot as plt
-import io, base64
+import asyncio, micropip
 from pyscript import Element
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+from collections import Counter
+import io, base64
 
-# Elementos da página
-status_el = Element("output-status")
-table_el  = Element("output-table")
-plot_el   = Element("output-plot")
-loader_el = Element("loader")
-
-nlp = spacy.load("pt_core_news_sm")
+# variáveis globais
+nlp = None
 BASE_POS = ["NOUN","VERB","ADJ","ADV","ADP","PROPN"]
 
+# 1) carrega o spaCy e o modelo de português
+async def init():
+    status = Element("output-status")
+    loader = Element("loader")
+    status.write("Carregando modelo de linguagem…")
+    loader.element.style.display = "block"
+    await micropip.install("spacy")  # instala o core do spaCy
+    # nossa wheel já foi baixada via <py-config files>, basta instalar
+    await micropip.install("pt_core_news_sm-3.7.0-py3-none-any.whl")
+    import spacy
+    global nlp
+    nlp = spacy.load("pt_core_news_sm")
+    status.write("Modelo carregado! Pronto para análise.")
+    loader.element.style.display = "none"
+
+# dispara o init em background sem usar await no topo
+asyncio.create_task(init())
+
+# 2) função que calcula o ICOER
 def calcular_icoer(frases):
     registros = []
     for i, sent in enumerate(nlp.pipe(frases), start=1):
-        if len(sent) < 3: 
+        if len(sent) < 3:
             continue
         counts = Counter([t.pos_ for t in sent])
         total = sum(counts.values()) or 1
-        probs = np.array([counts.get(pos,0)/total for pos in BASE_POS if counts.get(pos,0)>0])
+        probs = np.array([counts[p]/total for p in BASE_POS if counts[p]>0])
         ent = -np.sum(probs * np.log2(probs)) if probs.size>0 else 0
         ent_max = np.log2(len(BASE_POS))
-        icoer = round(max(0,1 - (ent/ent_max if ent_max>0 else 0)),4)
+        icoer = round(max(0, 1 - (ent/ent_max if ent_max>0 else 0)), 4)
         registros.append({
             "narraton": i,
             "frase": sent.text,
@@ -154,48 +94,54 @@ def calcular_icoer(frases):
     if not registros:
         return pd.DataFrame([{"narraton":0,"frase":"NENHUMA FRASE VÁLIDA","n_palavras":0,"tags":{},"icoer":0}])
     df = pd.DataFrame(registros)
-    summary = pd.DataFrame([{
+    resumo = pd.DataFrame([{
         "narraton": 0,
         "frase": "MÉDIA GERAL",
         "n_palavras": round(df["n_palavras"].mean(),2),
-        "tags": {pos: round(df["tags"].apply(lambda d: d.get(pos,0)).mean(),2) for pos in BASE_POS},
+        "tags": {p: round(df["tags"].apply(lambda d: d.get(p,0)).mean(),2) for p in BASE_POS},
         "icoer": round(df["icoer"].mean(),4)
     }])
-    return pd.concat([summary, df], ignore_index=True)
+    return pd.concat([resumo, df], ignore_index=True)
 
-async def run_analysis():
-    loader_el.element.style.display = "block"
-    status_el.write("")
-    table_el.clear()
-    plot_el.clear()
-    try:
-        raw = Element("text-input").value
-        frases = [s.strip() for s in nlp(raw).sents if s.text.strip()]
-        if not frases:
-            status_el.write("Nenhuma frase encontrada.")
-            return
-        status_el.write("Analisando...")
-        df = calcular_icoer(frases)
-        table_el.write(df.to_html(index=False), append=False)
+# 3) função chamada no clique — deve ser SÍNCRONA
+def run_analysis(*args, **kwargs):
+    status = Element("output-status")
+    table  = Element("output-table")
+    plot   = Element("output-plot")
+    loader = Element("loader")
 
-        df_plot = df[df["narraton"]!=0]
-        if not df_plot.empty:
-            fig, ax = plt.subplots(figsize=(8,4))
-            ax.bar(df_plot["narraton"].astype(str), df_plot["icoer"])
-            ax.set_ylim(0,1)
-            ax.set_xlabel("Frase (narraton)")
-            ax.set_ylabel("ICOER")
-            plt.tight_layout()
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png"); buf.seek(0)
-            img = base64.b64encode(buf.read()).decode("utf-8")
-            plot_el.write(f'<img src="data:image/png;base64,{img}"/>', append=False)
-            plt.close(fig)
-        status_el.write("Pronto!")
-    except Exception as e:
-        status_el.write(f"Erro: {e}")
-    finally:
-        loader_el.element.style.display = "none"
+    if nlp is None:
+        status.write("Ainda carregando o modelo, aguarde…")
+        return
+
+    text = Element("text-input").value
+    frases = [s.text.strip() for s in nlp(text).sents if s.text.strip()]
+    if not frases:
+        status.write("Nenhuma frase encontrada.")
+        return
+
+    status.write("Analisando…")
+    loader.element.style.display = "block"
+
+    df = calcular_icoer(frases)
+    table.write(df.to_html(index=False), append=False)
+
+    dfp = df[df["narraton"]!=0]
+    if not dfp.empty:
+        fig, ax = plt.subplots(figsize=(8,4))
+        ax.bar(dfp["narraton"].astype(str), dfp["icoer"])
+        ax.set_ylim(0,1)
+        ax.set_xlabel("Narraton")
+        ax.set_ylabel("ICOER")
+        plt.tight_layout()
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png"); buf.seek(0)
+        img = base64.b64encode(buf.read()).decode("utf-8")
+        plot.write(f'<img src="data:image/png;base64,{img}" />', append=False)
+        plt.close(fig)
+
+    status.write("Pronto!")
+    loader.element.style.display = "none"
   </py-script>
 </body>
 </html>
