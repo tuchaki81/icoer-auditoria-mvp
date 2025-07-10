@@ -47,8 +47,12 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
         #output-table, #output-plot {
             margin-top: 25px;
@@ -111,7 +115,7 @@
         <p>Cole seu texto no campo abaixo. A ferramenta irá separar as frases, calcular o ICOER para cada uma e exibir os resultados em uma tabela e um gráfico.</p>
 
         <textarea id="text-input" rows="8" placeholder="Digite ou cole seu texto aqui...">A IA deve agir com coerência e verdade. A verdade é a forma mais pura de ressonância! O índice de coerência informacional orienta decisões éticas?</textarea>
-        <button id="analyze-btn" py-onClick="run_analysis">Analisar Texto</button>
+        <button id="analyze-btn">Analisar Texto</button>
 
         <div id="loader" class="loader"></div>
         <div id="output-status"></div>
@@ -132,17 +136,12 @@
     </footer>
 
     <py-config>
-        # Lista de pacotes que o PyScript precisa baixar.
         packages = [
             "pandas",
             "numpy",
             "matplotlib",
-            "spacy"
-        ]
-
-        # Lista de arquivos (wheels) que o PyScript deve baixar antes de executar
-        files = [
-            "https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0-py3-none-any.whl"
+            "spacy",
+            "spacy:pt_core_news_sm"
         ]
     </py-config>
 
@@ -154,12 +153,15 @@
         import matplotlib.pyplot as plt
         import io
         import base64
-        from pyscript import Element
+        from pyscript import Element, display, when
+        from js import document
 
+        # Elementos da interface
         status_element = Element("output-status")
         table_element = Element("output-table")
         plot_element = Element("output-plot")
         loader_element = Element("loader")
+        analyze_btn = document.getElementById("analyze-btn")
 
         nlp = None
         BASE_POS = ['NOUN', 'VERB', 'ADJ', 'ADV', 'ADP', 'PROPN']
@@ -170,19 +172,17 @@
                 status_element.write("Carregando modelo de linguagem (pode levar um minuto)...")
                 loader_element.element.style.display = "block"
                 try:
-                    # Instala o modelo a partir do wheel baixado
-                    await spacy.cli.package.install("pt_core_news_sm-3.7.0-py3-none-any.whl")
                     nlp = spacy.load("pt_core_news_sm")
                     status_element.write("Modelo carregado com sucesso! Pronto para análise.")
                 except Exception as e:
-                    status_element.write(f"Erro ao carregar o modelo: {e}")
+                    status_element.write(f"Erro ao carregar o modelo: {str(e)}")
                 finally:
                     loader_element.element.style.display = "none"
 
         def calcular_icoer(frases):
-            docs = list(nlp.pipe(frases))
             registros = []
-            for i, doc in enumerate(docs, start=1):
+            for i, frase in enumerate(frases, start=1):
+                doc = nlp(frase)
                 if not doc.text.strip() or len(doc) < 3 or not any(t.is_alpha or t.is_digit for t in doc):
                     continue
                 counts = Counter(t.pos_ for t in doc)
@@ -210,7 +210,6 @@
                     'icoer': 0
                 }])
 
-            # Linha de resumo
             tags_summary = {
                 pos: round(np.mean([r['tags'].get(pos, 0) for r in registros]), 2)
                 for pos in BASE_POS
@@ -222,14 +221,15 @@
                 'tags': tags_summary,
                 'icoer': round(df['icoer'].mean(), 4)
             }])
-            return pd.concat([resumo, df], ignore_index=True)[['narraton','frase','n_palavras','tags','icoer']]
+            return pd.concat([resumo, df], ignore_index=True)[['narraton', 'frase', 'n_palavras', 'tags', 'icoer']]
 
-        async def run_analysis(*args, **kwargs):
+        async def run_analysis(event=None):
             if nlp is None:
                 await setup_spacy()
                 if nlp is None:
                     return
 
+            analyze_btn.disabled = True
             table_element.clear()
             plot_element.clear()
             status_element.write("Analisando...")
@@ -242,10 +242,12 @@
 
                 if not frases:
                     status_element.write("Nenhuma frase encontrada para análise.")
+                    loader_element.element.style.display = "none"
+                    analyze_btn.disabled = False
                     return
 
                 df_result = calcular_icoer(frases)
-                table_element.write(df_result.to_html(index=False), append=False)
+                display(df_result, target="output-table", append=False)
 
                 df_plot = df_result[df_result['narraton'] != 0]
                 if not df_plot.empty:
@@ -267,12 +269,16 @@
                     plt.close(fig)
 
                 status_element.write("Análise concluída.")
-
             except Exception as e:
-                status_element.write(f"Ocorreu um erro durante a análise: {e}")
+                status_element.write(f"Ocorreu um erro durante a análise: {str(e)}")
             finally:
                 loader_element.element.style.display = "none"
+                analyze_btn.disabled = False
 
+        # Configura o evento do botão via JavaScript
+        analyze_btn.addEventListener("click", lambda e: pyscript.run("run_analysis()"))
+
+        # Inicializa o modelo na carga da página
         await setup_spacy()
     </py-script>
 </body>
