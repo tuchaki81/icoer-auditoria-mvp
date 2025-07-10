@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ICOER Auditoria MVP</title>
-    
-    <!-- PyScript for Python in the browser -->
+    <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/pyscript.css" />
     <script defer src="https://pyscript.net/releases/2024.1.1/pyscript.js"></script>
-    
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -65,37 +63,28 @@
 </head>
 <body>
     <h1>Análise de Coerência Informacional (ICOER)</h1>
-    <p>Ferramenta desenvolvida para calcular o Índice de Coerência Informacional em textos. Insira o texto abaixo para análise e visualize os resultados em tempo real.</p>
-    
+    <p>Ferramenta para calcular o Índice de Coerência Informacional diretamente no navegador. Cole seu texto abaixo e clique em <strong>Analisar</strong>.</p>
+
     <textarea id="text-input" placeholder="Cole seu texto aqui..."></textarea>
     <button id="analyze-btn">Analisar</button>
-    
     <div id="result">Os resultados da análise aparecerão aqui.</div>
-    
-    <!-- PyScript section: importe ou defina sua função de análise -->
+
+    <!-- PyScript: lógica de análise -->
     <py-script>
-from pyscript import Element
-# Importe aqui ou cole a lógica principal do seu notebook convertido em Python
-# Por exemplo, supondo que exista um módulo icoer.py no mesmo repositório:
-# from icoer import analyze_text
+from pyscript import Element, write
 
-def analyze_text(text: str) -> str:
-    # Função de placeholder: substitua pela lógica real
-    score = len(text.split())  # demo: retorna número de palavras
-    return f"Número de palavras: {score}"
+# Função principal de análise: substitua este bloco pela importação do seu módulo
+# Exemplo: from icoer import analyze_text_function
 
-# Event handler
+def analyze_text(_event=None):
+    text = Element("text-input").value or ""
+    # Placeholder: conta palavras como demo
+    score = len(text.split())
+    # Escreve no container result
+    write("result", f"Índice de Coerência Informacional (ICOER): {score}")
 
-btn = Element("analyze-btn")
-input_area = Element("text-input")
-output = Element("result")
-
-def on_click(evt):
-    txt = input_area.value
-    result_text = analyze_text(txt)
-    output.element.innerText = result_text
-
-btn.element.addEventListener("click", on_click)
+# Conecta o botão ao evento de clique
+Element("analyze-btn").element.addEventListener("click", analyze_text)
     </py-script>
 
     <div class="links">
